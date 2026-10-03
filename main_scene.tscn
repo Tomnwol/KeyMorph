@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://tmqa8n5tadvp"]
+
+[ext_resource type="Script" uid="uid://dendwlxpdww55" path="res://addons/morph_vfx/runtime/morph_polygon_2d.gd" id="1_morph"]
+[ext_resource type="Script" uid="uid://ce6p3mkwn4rec" path="res://addons/morph_vfx/resources/shape_keyframe.gd" id="2_key"]
+[ext_resource type="Script" uid="uid://bp1y1jly07cvf" path="res://addons/morph_vfx/resources/bezier_point.gd" id="3_point"]
+[ext_resource type="Script" uid="uid://3b3hjrtb6gk6" path="res://addons/morph_vfx/resources/morph_shape_2d.gd" id="4_shape"]
+
+[sub_resource type="Resource" id="p0a"]
+script = ExtResource("3_point")
+position = Vector2(0, -120)
+
+[sub_resource type="Resource" id="p1a"]
+script = ExtResource("3_point")
+position = Vector2(-120, 100)
+
+[sub_resource type="Resource" id="p2a"]
+script = ExtResource("3_point")
+position = Vector2(100, 60)
+
+[sub_resource type="Resource" id="key_a"]
+script = ExtResource("2_key")
+points = Array[ExtResource("3_point")]([SubResource("p0a"), SubResource("p1a"), SubResource("p2a")])
+
+[sub_resource type="Resource" id="p0b"]
+script = ExtResource("3_point")
+position = Vector2(0, -40)
+
+[sub_resource type="Resource" id="p1b"]
+script = ExtResource("3_point")
+position = Vector2(-160, 140)
+
+[sub_resource type="Resource" id="p2b"]
+script = ExtResource("3_point")
+position = Vector2(160, 140)
+
+[sub_resource type="Resource" id="key_b"]
+script = ExtResource("2_key")
+time = 1.0
+points = Array[ExtResource("3_point")]([SubResource("p0b"), SubResource("p1b"), SubResource("p2b")])
+
+[sub_resource type="Resource" id="Resource_d5x1h"]
+script = ExtResource("3_point")
+position = Vector2(35, -165)
+
+[sub_resource type="Resource" id="Resource_8mm7a"]
+script = ExtResource("3_point")
+position = Vector2(-189, 39)
+
+[sub_resource type="Resource" id="Resource_hq1ik"]
+script = ExtResource("3_point")
+position = Vector2(137, 140)
+
+[sub_resource type="Resource" id="Resource_nfk4m"]
+script = ExtResource("2_key")
+time = 0.18835098335854766
+points = Array[ExtResource("3_point")]([SubResource("Resource_d5x1h"), SubResource("Resource_8mm7a"), SubResource("Resource_hq1ik")])
+
+[sub_resource type="Resource" id="Resource_66tet"]
+script = ExtResource("3_point")
+position = Vector2(-219, -138)
+
+[sub_resource type="Resource" id="Resource_7ycvg"]
+script = ExtResource("3_point")
+position = Vector2(-59, 187)
+
+[sub_resource type="Resource" id="Resource_wr18j"]
+script = ExtResource("3_point")
+position = Vector2(146.47437, 140)
+
+[sub_resource type="Resource" id="Resource_qwutr"]
+script = ExtResource("2_key")
+time = 0.5226928895612708
+points = Array[ExtResource("3_point")]([SubResource("Resource_66tet"), SubResource("Resource_7ycvg"), SubResource("Resource_wr18j")])
+
+[sub_resource type="Resource" id="shape"]
+script = ExtResource("4_shape")
+duration = 1.5
+keyframes = Array[ExtResource("2_key")]([SubResource("key_a"), SubResource("key_b"), SubResource("Resource_nfk4m"), SubResource("Resource_qwutr")])
+
+[node name="MainScene" type="Node2D" unique_id=626426631]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=645162175]
+position = Vector2(640, 360)
+
+[node name="MorphPolygon2D" type="Polygon2D" parent="." unique_id=70399779]
+position = Vector2(640, 360)
+color = Color(0.3, 0.75, 1, 0.85)
+polygon = PackedVector2Array(0, -120, -120, 100, 100, 60)
+uv = PackedVector2Array(0, -120, -120, 100, 100, 60)
+script = ExtResource("1_morph")
+shape = SubResource("shape")
