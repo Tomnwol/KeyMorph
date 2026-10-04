@@ -2,15 +2,17 @@
 class_name MorphPolygon2D
 extends Node2D
 ## Bezier morph polygon. Fill is drawn tessellated; only control anchors are editable.
+## Assign a ShaderMaterial on this CanvasItem; UV depends on `uv_mode`.
 
 signal timeline_changed
 
 enum Mode { PREVIEW, EDIT_KEY }
+enum UVMode { BOUNDING_BOX, POLAR }
 
 @export var shape: MorphShape2D:
 	set(value):
 		shape = value
-		_sync_precision_from_shape()
+		_sync_from_shape()
 		if shape != null and not shape.keyframes.is_empty():
 			select_keyframe(0)
 		else:
@@ -22,6 +24,23 @@ enum Mode { PREVIEW, EDIT_KEY }
 @export var color: Color = Color(0.3, 0.75, 1.0, 0.85):
 	set(value):
 		color = value
+		queue_redraw()
+
+@export var ease: MorphEasing.Type = MorphEasing.Type.LINEAR:
+	set(value):
+		ease = value
+		if shape != null:
+			shape.ease = ease
+		queue_redraw()
+
+@export var uv_mode: UVMode = UVMode.BOUNDING_BOX:
+	set(value):
+		uv_mode = value
+		queue_redraw()
+
+@export var draw_outline: bool = true:
+	set(value):
+		draw_outline = value
 		queue_redraw()
 
 @export_range(2, 64, 1) var curve_precision: int = 12:
@@ -75,7 +94,7 @@ var _syncing_time_from_key := false
 
 func _ready() -> void:
 	set_process(true)
-	_sync_precision_from_shape()
+	_sync_from_shape()
 	if selected_keyframe < 0 and shape != null and not shape.keyframes.is_empty():
 		select_keyframe(0)
 	else:
@@ -93,8 +112,13 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var points := get_display_polygon()
 	if points.size() >= 3:
-		draw_colored_polygon(points, color)
-	if points.size() >= 2:
+		var uvs := compute_uvs(points)
+		var colors := PackedColorArray()
+		colors.resize(points.size())
+		colors.fill(color)
+		## Uses this CanvasItem's `material` (assign a ShaderMaterial in the inspector).
+		draw_polygon(points, colors, uvs)
+	if draw_outline and points.size() >= 2:
 		var looped := points.duplicate()
 		if shape == null or shape.closed:
 			looped.append(points[0])
@@ -337,6 +361,61 @@ func _set_edit_export(value: int) -> void:
 	_ignore_edit_export = false
 
 
-func _sync_precision_from_shape() -> void:
-	if shape != null:
-		curve_precision = shape.curve_precision
+func _sync_from_shape() -> void:
+	if shape == null:
+		return
+	curve_precision = shape.curve_precision
+	ease = shape.ease
+
+
+func compute_uvs(points: PackedVector2Array) -> PackedVector2Array:
+	match uv_mode:
+		UVMode.POLAR:
+			return _uvs_polar(points)
+		_:
+			return _uvs_bounding_box(points)
+
+
+func _uvs_bounding_box(points: PackedVector2Array) -> PackedVector2Array:
+	var uvs := PackedVector2Array()
+	if points.is_empty():
+		return uvs
+	var min_v := points[0]
+	var max_v := points[0]
+	for p in points:
+		min_v.x = minf(min_v.x, p.x)
+		min_v.y = minf(min_v.y, p.y)
+		max_v.x = maxf(max_v.x, p.x)
+		max_v.y = maxf(max_v.y, p.y)
+	var size := max_v - min_v
+	size.x = maxf(size.x, 0.0001)
+	size.y = maxf(size.y, 0.0001)
+	uvs.resize(points.size())
+	for i in points.size():
+		uvs[i] = Vector2(
+			(points[i].x - min_v.x) / size.x,
+			(points[i].y - min_v.y) / size.y
+		)
+	return uvs
+
+
+func _uvs_polar(points: PackedVector2Array) -> PackedVector2Array:
+	var uvs := PackedVector2Array()
+	if points.is_empty():
+		return uvs
+	var centroid := Vector2.ZERO
+	for p in points:
+		centroid += p
+	centroid /= float(points.size())
+	var max_r := 0.0
+	for p in points:
+		max_r = maxf(max_r, p.distance_to(centroid))
+	max_r = maxf(max_r, 0.0001)
+	uvs.resize(points.size())
+	for i in points.size():
+		var delta := points[i] - centroid
+		var angle := atan2(delta.y, delta.x) ## -PI..PI
+		var u := (angle + PI) / TAU ## 0..1 around
+		var v := delta.length() / max_r ## 0 at center .. 1 at rim
+		uvs[i] = Vector2(u, v)
+	return uvs

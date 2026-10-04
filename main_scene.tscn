@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://ce6p3mkwn4rec" path="res://addons/morph_vfx/resources/shape_keyframe.gd" id="2_key"]
 [ext_resource type="Script" uid="uid://bp1y1jly07cvf" path="res://addons/morph_vfx/resources/bezier_point.gd" id="3_point"]
 [ext_resource type="Script" uid="uid://3b3hjrtb6gk6" path="res://addons/morph_vfx/resources/morph_shape_2d.gd" id="4_shape"]
+[ext_resource type="Material" path="res://addons/morph_vfx/shaders/km_polar_energy_mat.tres" id="5_mat"]
 
 [sub_resource type="Resource" id="p0a"]
 script = ExtResource("3_point")
@@ -83,8 +84,11 @@ keyframes = Array[ExtResource("2_key")]([SubResource("key_a"), SubResource("key_
 position = Vector2(640, 360)
 
 [node name="MorphPolygon2D" type="Node2D" parent="." unique_id=70399779]
+material = ExtResource("5_mat")
 position = Vector2(640, 360)
 script = ExtResource("1_morph")
 shape = SubResource("shape")
-color = Color(0.3, 0.75, 1, 0.85)
+color = Color(1, 1, 1, 1)
+uv_mode = 1
 curve_precision = 12
+playing = true

@@ -6,6 +6,7 @@ extends Resource
 @export var closed: bool = true
 @export var duration: float = 1.0
 @export var loop: bool = true
+@export var ease: MorphEasing.Type = MorphEasing.Type.LINEAR
 @export_range(2, 64, 1, "or_greater") var curve_precision: int = 12
 @export var keyframes: Array[ShapeKeyframe] = []
 
@@ -203,6 +204,7 @@ func sample_control_points(t: float) -> Array[BezierPoint]:
 	var b: ShapeKeyframe = entries[i + 1].key
 	var span: float = float(entries[i + 1].time) - float(entries[i].time)
 	var alpha: float = 0.0 if span <= 0.0 else (t - float(entries[i].time)) / span
+	alpha = MorphEasing.apply(ease, alpha)
 	return _lerp_control_points(a, b, alpha)
 
 
