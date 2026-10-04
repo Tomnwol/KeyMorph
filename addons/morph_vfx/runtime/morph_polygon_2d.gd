@@ -44,8 +44,19 @@ enum Mode { PREVIEW, EDIT_KEY }
 
 @export_range(0.0, 1.0, 0.001) var time: float = 0.0:
 	set(value):
-		time = clampf(value, 0.0, 1.0)
-		if playing or mode == Mode.PREVIEW:
+		var next := clampf(value, 0.0, 1.0)
+		if is_equal_approx(time, next):
+			return
+		time = next
+		## In edit mode, Time in the inspector retimes the selected keyframe.
+		if not _syncing_time_from_key and is_editing_keyframe():
+			var key := get_edit_keyframe()
+			if key != null and not is_equal_approx(key.time, time):
+				key.time = time
+				if shape != null:
+					shape.emit_changed()
+				timeline_changed.emit()
+		if playing or mode == Mode.PREVIEW or is_editing_keyframe():
 			queue_redraw()
 
 @export var edit_keyframe: int = 0:
@@ -59,6 +70,7 @@ var mode: Mode = Mode.EDIT_KEY
 var selected_keyframe: int = -1
 
 var _ignore_edit_export := false
+var _syncing_time_from_key := false
 
 
 func _ready() -> void:
@@ -126,7 +138,7 @@ func select_keyframe(index: int) -> void:
 	mode = Mode.EDIT_KEY
 	var key := shape.keyframes[selected_keyframe]
 	if key != null:
-		time = key.time
+		_set_time_from_key(key.time)
 	queue_redraw()
 	timeline_changed.emit()
 
@@ -217,6 +229,36 @@ func commit_edit() -> void:
 	pass
 
 
+func move_keyframe_time(index: int, new_time: float) -> void:
+	if shape == null or index < 0 or index >= shape.keyframes.size():
+		return
+	var key := shape.keyframes[index]
+	if key == null:
+		return
+	var next := clampf(new_time, 0.0, 1.0)
+	if is_equal_approx(key.time, next):
+		return
+	key.time = next
+	if selected_keyframe == index:
+		_set_time_from_key(key.time)
+	shape.emit_changed()
+	queue_redraw()
+	timeline_changed.emit()
+
+
+func begin_keyframe_drag(index: int) -> void:
+	if shape == null:
+		return
+	shape.bake_display_times_to_keys()
+	select_keyframe(index)
+
+
+func _set_time_from_key(key_time: float) -> void:
+	_syncing_time_from_key = true
+	time = key_time
+	_syncing_time_from_key = false
+
+
 func is_editing_keyframe() -> bool:
 	return mode == Mode.EDIT_KEY and selected_keyframe >= 0
 
@@ -234,6 +276,17 @@ func notify_geometry_edited() -> void:
 		shape.emit_changed()
 	queue_redraw()
 	timeline_changed.emit()
+
+
+func insert_point_on_edge(edge_index: int, t: float) -> int:
+	if shape == null or not is_editing_keyframe():
+		return -1
+	var new_index := shape.insert_point_on_edge(edge_index, t, selected_keyframe)
+	if new_index < 0:
+		return -1
+	queue_redraw()
+	timeline_changed.emit()
+	return new_index
 
 
 func edge_tangent_at(key: ShapeKeyframe, index: int) -> Vector2:

@@ -24,7 +24,7 @@ func set_target(node: MorphPolygon2D) -> void:
 		target.timeline_changed.connect(_on_timeline_changed)
 	if _track != null and _track.has_method("set_target"):
 		_track.set_target(target)
-	_refresh()
+	_refresh_ui()
 
 
 func _build_ui() -> void:
@@ -87,10 +87,11 @@ func _build_ui() -> void:
 	_track.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_track.scrubbed.connect(_on_scrubbed)
 	_track.keyframe_clicked.connect(_on_key_clicked)
+	_track.keyframe_dragged.connect(_on_key_dragged)
 	root.add_child(_track)
 
 	var help := Label.new()
-	help.text = "Click an anchor to show handles. Orange/green bars start tangent to the edges. Double-click anchor = reset. curve_precision on the node."
+	help.text = "Double-click an edge to add a point (all keys, shape preserved). Click anchor for handles. Double-click anchor = reset."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_color_override("font_color", Color(0.7, 0.72, 0.76))
 	root.add_child(help)
@@ -106,7 +107,7 @@ func _toggle_play() -> void:
 	if target == null:
 		return
 	target.playing = not target.playing
-	_refresh()
+	_refresh_ui()
 
 
 func _on_scrubbed(t: float) -> void:
@@ -118,18 +119,32 @@ func _on_scrubbed(t: float) -> void:
 func _on_key_clicked(index: int) -> void:
 	if target == null:
 		return
-	target.select_keyframe(index)
+	if target.has_method("begin_keyframe_drag"):
+		target.begin_keyframe_drag(index)
+	else:
+		target.select_keyframe(index)
+
+
+func _on_key_dragged(index: int, t: float) -> void:
+	if target == null:
+		return
+	target.move_keyframe_time(index, t)
+	_update_labels()
+	if _track != null:
+		_track.notify_external_refresh() if _track.has_method("notify_external_refresh") else _track.queue_redraw()
 
 
 func _on_timeline_changed() -> void:
-	_refresh()
+	_refresh_ui()
 
 
-func _refresh() -> void:
+func _refresh_ui() -> void:
+	## Never rebind the track here — that used to wipe in-progress key drags.
 	if _track != null:
-		if _track.has_method("set_target"):
-			_track.set_target(target)
-		_track.queue_redraw()
+		if _track.has_method("notify_external_refresh"):
+			_track.notify_external_refresh()
+		else:
+			_track.queue_redraw()
 	_update_labels()
 	if _play_btn != null:
 		_play_btn.text = "Stop" if target != null and target.playing else "Play"

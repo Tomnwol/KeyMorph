@@ -30,13 +30,13 @@ func _exit_tree() -> void:
 	if selection.selection_changed.is_connected(_on_selection_changed):
 		selection.selection_changed.disconnect(_on_selection_changed)
 
+	_unbind_morph()
+
 	if _dock != null:
 		remove_control_from_bottom_panel(_dock)
 		_dock.queue_free()
 		_dock = null
 
-	_gizmo.set_morph(null)
-	_edited_morph = null
 	remove_custom_type("MorphPolygon2D")
 	print("%s: disabled" % ADDON_NAME)
 
@@ -46,15 +46,12 @@ func _handles(object: Object) -> bool:
 
 
 func _edit(object: Object) -> void:
-	_edited_morph = object as MorphPolygon2D
-	_gizmo.set_morph(_edited_morph)
-	update_overlays()
+	_bind_morph(object as MorphPolygon2D)
 
 
 func _make_visible(visible: bool) -> void:
 	if not visible:
-		_edited_morph = null
-		_gizmo.set_morph(null)
+		_unbind_morph()
 	update_overlays()
 
 
@@ -81,7 +78,35 @@ func _on_selection_changed() -> void:
 	_dock.set_target(morph)
 	if morph != null:
 		make_bottom_panel_item_visible(_dock)
-		## Ensure gizmo tracks selection even if _edit order differs.
-		_edited_morph = morph
+		_bind_morph(morph)
+	else:
+		_unbind_morph()
+		update_overlays()
+
+
+func _bind_morph(morph: MorphPolygon2D) -> void:
+	if morph == _edited_morph:
 		_gizmo.set_morph(morph)
 		update_overlays()
+		return
+
+	_unbind_morph()
+	_edited_morph = morph
+	_gizmo.set_morph(_edited_morph)
+	if _edited_morph != null and not _edited_morph.timeline_changed.is_connected(_on_morph_timeline_changed):
+		_edited_morph.timeline_changed.connect(_on_morph_timeline_changed)
+	update_overlays()
+
+
+func _unbind_morph() -> void:
+	if _edited_morph != null and _edited_morph.timeline_changed.is_connected(_on_morph_timeline_changed):
+		_edited_morph.timeline_changed.disconnect(_on_morph_timeline_changed)
+	_edited_morph = null
+	_gizmo.set_morph(null)
+
+
+func _on_morph_timeline_changed() -> void:
+	## Key switch / retime / geometry edit — refresh viewport gizmo immediately.
+	if _gizmo.has_method("on_timeline_changed"):
+		_gizmo.on_timeline_changed()
+	update_overlays()

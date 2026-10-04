@@ -33,6 +33,27 @@ func get_timeline_entries() -> Array[Dictionary]:
 	return entries
 
 
+func bake_display_times_to_keys() -> void:
+	## If every key shares the same stored time, persist the evenly-spaced display times.
+	var entries := get_timeline_entries()
+	if entries.size() <= 1:
+		return
+	var raw_same := true
+	var first_time := keyframes[int(entries[0].index)].time
+	for i in range(1, entries.size()):
+		var key: ShapeKeyframe = keyframes[int(entries[i].index)]
+		if key == null or not is_equal_approx(key.time, first_time):
+			raw_same = false
+			break
+	if not raw_same:
+		return
+	for i in entries.size():
+		var key2: ShapeKeyframe = keyframes[int(entries[i].index)]
+		if key2 != null:
+			key2.time = float(i) / float(entries.size() - 1)
+	emit_changed()
+
+
 func find_keyframe_at_time(t: float, tolerance: float = 0.02) -> int:
 	var best := -1
 	var best_dist := INF
@@ -71,6 +92,64 @@ func remove_keyframe(index: int) -> void:
 		return
 	keyframes.remove_at(index)
 	emit_changed()
+
+
+func insert_point_on_edge(edge_index: int, t: float, topology_source: int = 0) -> int:
+	## Insert a vertex on the same edge of every keyframe (De Casteljau),
+	## so the silhouette stays unchanged for the user.
+	if keyframes.is_empty():
+		return -1
+	if topology_source < 0 or topology_source >= keyframes.size():
+		topology_source = 0
+	sync_topology_from(topology_source)
+
+	var ref_key := keyframes[topology_source]
+	if ref_key == null or ref_key.points.size() < 2:
+		return -1
+	var count := ref_key.points.size()
+	var segment_count := count if closed else count - 1
+	if edge_index < 0 or edge_index >= segment_count:
+		return -1
+
+	t = clampf(t, 0.05, 0.95)
+	for key in keyframes:
+		if key == null or key.points.size() < 2:
+			continue
+		_split_keyframe_edge(key, edge_index, t)
+
+	emit_changed()
+	return edge_index + 1
+
+
+func _split_keyframe_edge(key: ShapeKeyframe, edge_index: int, t: float) -> void:
+	var count := key.points.size()
+	var a: BezierPoint = key.points[edge_index]
+	var b: BezierPoint = key.points[(edge_index + 1) % count]
+	if a == null or b == null:
+		return
+
+	var p0 := a.position
+	var p1 := a.position + a.handle_out
+	var p2 := b.position + b.handle_in
+	var p3 := b.position
+
+	var p01 := p0.lerp(p1, t)
+	var p12 := p1.lerp(p2, t)
+	var p23 := p2.lerp(p3, t)
+	var p012 := p01.lerp(p12, t)
+	var p123 := p12.lerp(p23, t)
+	var p0123 := p012.lerp(p123, t)
+
+	a.handle_out = BezierPoint.clamp_handle(p01 - p0)
+	b.handle_in = BezierPoint.clamp_handle(p23 - p3)
+
+	var mid := BezierPoint.new()
+	mid.position = p0123
+	mid.handle_in = BezierPoint.clamp_handle(p012 - p0123)
+	mid.handle_out = BezierPoint.clamp_handle(p123 - p0123)
+
+	key.points.insert(edge_index + 1, mid)
+	key.emit_changed()
 
 
 func sync_topology_from(source_index: int) -> void:
