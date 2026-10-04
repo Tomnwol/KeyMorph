@@ -10,7 +10,7 @@ var _time_label: Label
 
 
 func _ready() -> void:
-	name = "Morph VFX"
+	name = "KeyMorph"
 	set_custom_minimum_size(Vector2(0, 120))
 	_build_ui()
 	set_process(true)
@@ -90,7 +90,7 @@ func _build_ui() -> void:
 	root.add_child(_track)
 
 	var help := Label.new()
-	help.text = "Click a yellow/blue key to edit that pose in the viewport. Drag the track to preview the morph."
+	help.text = "Click an anchor to show handles. Orange/green bars start tangent to the edges. Double-click anchor = reset. curve_precision on the node."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_color_override("font_color", Color(0.7, 0.72, 0.76))
 	root.add_child(help)

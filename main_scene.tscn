@@ -82,10 +82,9 @@ keyframes = Array[ExtResource("2_key")]([SubResource("key_a"), SubResource("key_
 [node name="Camera2D" type="Camera2D" parent="." unique_id=645162175]
 position = Vector2(640, 360)
 
-[node name="MorphPolygon2D" type="Polygon2D" parent="." unique_id=70399779]
+[node name="MorphPolygon2D" type="Node2D" parent="." unique_id=70399779]
 position = Vector2(640, 360)
-color = Color(0.3, 0.75, 1, 0.85)
-polygon = PackedVector2Array(0, -120, -120, 100, 100, 60)
-uv = PackedVector2Array(0, -120, -120, 100, 100, 60)
 script = ExtResource("1_morph")
 shape = SubResource("shape")
+color = Color(0.3, 0.75, 1, 0.85)
+curve_precision = 12

@@ -1,15 +1,17 @@
 @tool
 extends EditorPlugin
 
-const ADDON_NAME := "Morph VFX"
+const ADDON_NAME := "KeyMorph"
 
 var _dock: Control
+var _gizmo = preload("res://addons/morph_vfx/editor/morph_canvas_gizmo.gd").new()
+var _edited_morph: MorphPolygon2D
 
 
 func _enter_tree() -> void:
 	add_custom_type(
 		"MorphPolygon2D",
-		"Polygon2D",
+		"Node2D",
 		preload("res://addons/morph_vfx/runtime/morph_polygon_2d.gd"),
 		null
 	)
@@ -33,8 +35,38 @@ func _exit_tree() -> void:
 		_dock.queue_free()
 		_dock = null
 
+	_gizmo.set_morph(null)
+	_edited_morph = null
 	remove_custom_type("MorphPolygon2D")
 	print("%s: disabled" % ADDON_NAME)
+
+
+func _handles(object: Object) -> bool:
+	return object is MorphPolygon2D
+
+
+func _edit(object: Object) -> void:
+	_edited_morph = object as MorphPolygon2D
+	_gizmo.set_morph(_edited_morph)
+	update_overlays()
+
+
+func _make_visible(visible: bool) -> void:
+	if not visible:
+		_edited_morph = null
+		_gizmo.set_morph(null)
+	update_overlays()
+
+
+func _forward_canvas_draw_over_viewport(overlay: Control) -> void:
+	_gizmo.draw_over(overlay)
+
+
+func _forward_canvas_gui_input(event: InputEvent) -> bool:
+	var handled := _gizmo.handle_input(event)
+	if handled:
+		update_overlays()
+	return handled
 
 
 func _on_selection_changed() -> void:
@@ -49,3 +81,7 @@ func _on_selection_changed() -> void:
 	_dock.set_target(morph)
 	if morph != null:
 		make_bottom_panel_item_visible(_dock)
+		## Ensure gizmo tracks selection even if _edit order differs.
+		_edited_morph = morph
+		_gizmo.set_morph(morph)
+		update_overlays()

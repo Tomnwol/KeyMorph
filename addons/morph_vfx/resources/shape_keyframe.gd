@@ -29,3 +29,23 @@ func set_positions(positions: PackedVector2Array) -> void:
 		next[i] = point
 	points = next
 	emit_changed()
+
+
+func set_control_points(controls: Array[BezierPoint]) -> void:
+	var next: Array[BezierPoint] = []
+	next.resize(controls.size())
+	for i in controls.size():
+		if controls[i] != null:
+			next[i] = controls[i].duplicate_point()
+		else:
+			next[i] = BezierPoint.new()
+	points = next
+	emit_changed()
+
+
+func duplicate_control_points() -> Array[BezierPoint]:
+	var out: Array[BezierPoint] = []
+	out.resize(points.size())
+	for i in points.size():
+		out[i] = points[i].duplicate_point() if points[i] != null else BezierPoint.new()
+	return out
