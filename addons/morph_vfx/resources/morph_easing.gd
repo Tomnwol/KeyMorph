@@ -1,7 +1,7 @@
 @tool
 class_name MorphEasing
 extends RefCounted
-## Compact easing set for global morph interpolation.
+## Compact easing set for morph interpolation.
 
 
 enum Type {
@@ -11,6 +11,13 @@ enum Type {
 	EASE_IN_OUT,
 	SMOOTH,
 	BOUNCE_OUT,
+}
+
+enum Mode {
+	## Ease the blend between each pair of keyframes (current behavior).
+	BETWEEN_KEYS,
+	## Ease the whole timeline playhead, then sample keys linearly.
+	GLOBAL_TIMELINE,
 }
 
 

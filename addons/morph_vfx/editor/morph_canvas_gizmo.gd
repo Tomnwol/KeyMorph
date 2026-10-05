@@ -30,7 +30,7 @@ func set_morph(node: MorphPolygon2D) -> void:
 	morph = node
 	_drag_kind = DragKind.NONE
 	_drag_index = -1
-	_active_index = -1
+	_set_active_index(-1)
 	_last_keyframe_index = -999
 	_hover_edge = -1
 	_drag_moved = false
@@ -46,9 +46,15 @@ func on_timeline_changed() -> void:
 	_last_keyframe_index = idx
 	_drag_kind = DragKind.NONE
 	_drag_index = -1
-	_active_index = -1
+	_set_active_index(-1)
 	_hover_edge = -1
 	_drag_moved = false
+
+
+func _set_active_index(index: int) -> void:
+	_active_index = index
+	if morph != null:
+		morph.editor_selected_point = index
 
 
 func draw_over(overlay: Control) -> void:
@@ -106,6 +112,11 @@ func handle_input(event: InputEvent) -> bool:
 	if key == null:
 		return false
 
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key_ev := event as InputEventKey
+		if key_ev.keycode == KEY_DELETE or key_ev.keycode == KEY_BACKSPACE:
+			return try_delete_selected_point()
+
 	if event is InputEventMouseMotion:
 		var motion := event as InputEventMouseMotion
 
@@ -149,13 +160,13 @@ func handle_input(event: InputEvent) -> bool:
 				if int(edge_hit.edge) >= 0:
 					var new_index := morph.insert_point_on_edge(int(edge_hit.edge), float(edge_hit.t))
 					if new_index >= 0:
-						_active_index = new_index
+						_set_active_index(new_index)
 						_hover_edge = -1
 					_clear_drag()
 					return true
 
 			if hit.kind != DragKind.NONE:
-				_active_index = hit.index
+				_set_active_index(hit.index)
 				_hover_edge = -1
 				_drag_kind = hit.kind
 				_drag_index = hit.index
@@ -168,12 +179,12 @@ func handle_input(event: InputEvent) -> bool:
 
 			## Click on edge / fill: keep the node selected (do NOT return false).
 			if int(edge_hit.edge) >= 0 or _is_over_shape(mb.position, key):
-				_active_index = -1
+				_set_active_index(-1)
 				_clear_drag()
 				return true
 
 			## Outside the shape: allow the editor to change selection.
-			_active_index = -1
+			_set_active_index(-1)
 			_clear_drag()
 			return false
 
@@ -190,6 +201,19 @@ func handle_input(event: InputEvent) -> bool:
 			return true
 
 	return false
+
+
+func try_delete_selected_point() -> bool:
+	if morph == null or not morph.is_editing_keyframe():
+		return false
+	if _active_index < 0:
+		return false
+	if morph.remove_point_at(_active_index):
+		_set_active_index(-1)
+		_hover_edge = -1
+		_clear_drag()
+		return true
+	return true ## Consumed even if min point count blocked the delete.
 
 
 func _handle_drag_motion(overlay_pos: Vector2, key: ShapeKeyframe) -> bool:

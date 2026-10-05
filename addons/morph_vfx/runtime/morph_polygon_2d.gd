@@ -2,12 +2,11 @@
 class_name MorphPolygon2D
 extends Node2D
 ## Bezier morph polygon. Fill is drawn tessellated; only control anchors are editable.
-## Assign a ShaderMaterial on this CanvasItem; UV depends on `uv_mode`.
+## Assign a ShaderMaterial on this CanvasItem; UV = bounding-box 0..1.
 
 signal timeline_changed
 
 enum Mode { PREVIEW, EDIT_KEY }
-enum UVMode { BOUNDING_BOX, POLAR }
 
 @export var shape: MorphShape2D:
 	set(value):
@@ -33,10 +32,32 @@ enum UVMode { BOUNDING_BOX, POLAR }
 			shape.ease = ease
 		queue_redraw()
 
-@export var uv_mode: UVMode = UVMode.BOUNDING_BOX:
+@export var ease_mode: MorphEasing.Mode = MorphEasing.Mode.BETWEEN_KEYS:
 	set(value):
-		uv_mode = value
+		ease_mode = value
+		if shape != null:
+			shape.ease_mode = ease_mode
 		queue_redraw()
+
+@export_range(0.0, 2.5, 0.01) var smooth_blend: float = 0.0:
+	set(value):
+		smooth_blend = clampf(value, 0.0, 2.5)
+		if shape != null:
+			shape.smooth_blend = smooth_blend
+		queue_redraw()
+
+@export_range(-1.0, 1.0, 0.01) var smooth_tension: float = 0.0:
+	set(value):
+		smooth_tension = clampf(value, -1.0, 1.0)
+		if shape != null:
+			shape.smooth_tension = smooth_tension
+		queue_redraw()
+
+@export_range(0.05, 30.0, 0.05, "or_greater", "suffix:s") var duration: float = 1.0:
+	set(value):
+		duration = maxf(value, 0.05)
+		if shape != null:
+			shape.duration = duration
 
 @export var draw_outline: bool = true:
 	set(value):
@@ -87,6 +108,8 @@ enum UVMode { BOUNDING_BOX, POLAR }
 
 var mode: Mode = Mode.EDIT_KEY
 var selected_keyframe: int = -1
+## Set by the editor gizmo when an anchor is selected.
+var editor_selected_point: int = -1
 
 var _ignore_edit_export := false
 var _syncing_time_from_key := false
@@ -104,25 +127,82 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if shape == null:
 		return
-	if playing and shape.duration > 0.0:
-		time = fposmod(time + delta / shape.duration, 1.0)
+	if playing and duration > 0.0:
+		time = fposmod(time + delta / duration, 1.0)
 		queue_redraw()
 
 
 func _draw() -> void:
 	var points := get_display_polygon()
 	if points.size() >= 3:
-		var uvs := compute_uvs(points)
-		var colors := PackedColorArray()
-		colors.resize(points.size())
-		colors.fill(color)
-		## Uses this CanvasItem's `material` (assign a ShaderMaterial in the inspector).
-		draw_polygon(points, colors, uvs)
+		_draw_filled_polygon(points)
 	if draw_outline and points.size() >= 2:
 		var looped := points.duplicate()
 		if shape == null or shape.closed:
 			looped.append(points[0])
 		draw_polyline(looped, Color(color.r, color.g, color.b, 1.0), 2.0, true)
+
+
+func _draw_filled_polygon(points: PackedVector2Array) -> void:
+	## Robust fill: normal triangulation, then convex decompose, then centroid fan.
+	## Keeps shaders visible even when the morph self-intersects mid-blend.
+	var draw_points := points
+	var indices := Geometry2D.triangulate_polygon(points)
+
+	if indices.size() < 3:
+		var convex_parts := Geometry2D.decompose_polygon_in_convex(points)
+		if not convex_parts.is_empty():
+			for part in convex_parts:
+				if part.size() < 3:
+					continue
+				_draw_triangulated(part, Geometry2D.triangulate_polygon(part))
+			return
+		var fan := _centroid_fan(points)
+		draw_points = fan.points
+		indices = fan.indices
+
+	_draw_triangulated(draw_points, indices)
+
+
+func _draw_triangulated(points: PackedVector2Array, indices: PackedInt32Array) -> void:
+	if points.size() < 3 or indices.size() < 3:
+		return
+	var uvs := compute_uvs(points)
+	for i in range(0, indices.size() - 2, 3):
+		var ia := indices[i]
+		var ib := indices[i + 1]
+		var ic := indices[i + 2]
+		if ia < 0 or ib < 0 or ic < 0:
+			continue
+		if ia >= points.size() or ib >= points.size() or ic >= points.size():
+			continue
+		var tri := PackedVector2Array([points[ia], points[ib], points[ic]])
+		## Skip degenerate triangles.
+		if absf((tri[1] - tri[0]).cross(tri[2] - tri[0])) < 0.0001:
+			continue
+		var tri_uv := PackedVector2Array([uvs[ia], uvs[ib], uvs[ic]])
+		var tri_color := PackedColorArray([color, color, color])
+		draw_polygon(tri, tri_color, tri_uv)
+
+
+func _centroid_fan(points: PackedVector2Array) -> Dictionary:
+	## Always produces triangles; overlaps are OK for VFX morph transitions.
+	var centroid := Vector2.ZERO
+	for p in points:
+		centroid += p
+	centroid /= float(points.size())
+
+	var extended := points.duplicate()
+	extended.append(centroid)
+	var center_i := extended.size() - 1
+	var indices := PackedInt32Array()
+	var n := points.size()
+	for i in n:
+		var j := (i + 1) % n
+		indices.append(center_i)
+		indices.append(i)
+		indices.append(j)
+	return {"points": extended, "indices": indices}
 
 
 func get_display_polygon() -> PackedVector2Array:
@@ -313,6 +393,16 @@ func insert_point_on_edge(edge_index: int, t: float) -> int:
 	return new_index
 
 
+func remove_point_at(point_index: int) -> bool:
+	if shape == null or not is_editing_keyframe():
+		return false
+	if not shape.remove_point_at(point_index):
+		return false
+	queue_redraw()
+	timeline_changed.emit()
+	return true
+
+
 func edge_tangent_at(key: ShapeKeyframe, index: int) -> Vector2:
 	## Unit direction for handle_out; handle_in faces opposite (-tangent).
 	## Blends the two edge directions meeting at the vertex.
@@ -366,14 +456,14 @@ func _sync_from_shape() -> void:
 		return
 	curve_precision = shape.curve_precision
 	ease = shape.ease
+	ease_mode = shape.ease_mode
+	smooth_blend = shape.smooth_blend
+	smooth_tension = shape.smooth_tension
+	duration = maxf(shape.duration, 0.05)
 
 
 func compute_uvs(points: PackedVector2Array) -> PackedVector2Array:
-	match uv_mode:
-		UVMode.POLAR:
-			return _uvs_polar(points)
-		_:
-			return _uvs_bounding_box(points)
+	return _uvs_bounding_box(points)
 
 
 func _uvs_bounding_box(points: PackedVector2Array) -> PackedVector2Array:
@@ -396,26 +486,4 @@ func _uvs_bounding_box(points: PackedVector2Array) -> PackedVector2Array:
 			(points[i].x - min_v.x) / size.x,
 			(points[i].y - min_v.y) / size.y
 		)
-	return uvs
-
-
-func _uvs_polar(points: PackedVector2Array) -> PackedVector2Array:
-	var uvs := PackedVector2Array()
-	if points.is_empty():
-		return uvs
-	var centroid := Vector2.ZERO
-	for p in points:
-		centroid += p
-	centroid /= float(points.size())
-	var max_r := 0.0
-	for p in points:
-		max_r = maxf(max_r, p.distance_to(centroid))
-	max_r = maxf(max_r, 0.0001)
-	uvs.resize(points.size())
-	for i in points.size():
-		var delta := points[i] - centroid
-		var angle := atan2(delta.y, delta.x) ## -PI..PI
-		var u := (angle + PI) / TAU ## 0..1 around
-		var v := delta.length() / max_r ## 0 at center .. 1 at rim
-		uvs[i] = Vector2(u, v)
 	return uvs

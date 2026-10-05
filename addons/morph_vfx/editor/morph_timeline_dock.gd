@@ -74,6 +74,12 @@ func _build_ui() -> void:
 	)
 	bar.add_child(delete_btn)
 
+	var delete_point_btn := Button.new()
+	delete_point_btn.text = "Delete Point"
+	delete_point_btn.tooltip_text = "Delete the selected polygon point (all keyframes)"
+	delete_point_btn.pressed.connect(_on_delete_point_pressed)
+	bar.add_child(delete_point_btn)
+
 	_status = Label.new()
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(_status)
@@ -91,7 +97,7 @@ func _build_ui() -> void:
 	root.add_child(_track)
 
 	var help := Label.new()
-	help.text = "Double-click an edge to add a point (all keys, shape preserved). Click anchor for handles. Double-click anchor = reset."
+	help.text = "Double-click edge = add point. Select point + Delete = remove. Double-click point = reset handles."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.add_theme_color_override("font_color", Color(0.7, 0.72, 0.76))
 	root.add_child(help)
@@ -132,6 +138,16 @@ func _on_key_dragged(index: int, t: float) -> void:
 	_update_labels()
 	if _track != null:
 		_track.notify_external_refresh() if _track.has_method("notify_external_refresh") else _track.queue_redraw()
+
+
+func _on_delete_point_pressed() -> void:
+	if target == null:
+		return
+	if target.editor_selected_point < 0:
+		return
+	if target.remove_point_at(target.editor_selected_point):
+		target.editor_selected_point = -1
+		_refresh_ui()
 
 
 func _on_timeline_changed() -> void:

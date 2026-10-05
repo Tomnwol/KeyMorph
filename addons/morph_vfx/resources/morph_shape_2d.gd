@@ -4,9 +4,14 @@ extends Resource
 ## Animated Bezier polygon defined by keyframes with a shared point topology.
 
 @export var closed: bool = true
-@export var duration: float = 1.0
+@export var duration: float = 1.0 ## Seconds for a full 0→1 cycle when playing.
 @export var loop: bool = true
 @export var ease: MorphEasing.Type = MorphEasing.Type.LINEAR
+@export var ease_mode: MorphEasing.Mode = MorphEasing.Mode.BETWEEN_KEYS
+@export_range(0.0, 2.5, 0.01) var smooth_blend: float = 0.0
+## 0 = linear keys only. 1 = full Cardinal/Catmull. >1 exaggerates the spline deviation (more punch).
+@export_range(-1.0, 1.0, 0.01) var smooth_tension: float = 0.0
+## Cardinal tension: 0 = Catmull-Rom, >0 tighter/closer to linear, <0 longer tangents (more punch).
 @export_range(2, 64, 1, "or_greater") var curve_precision: int = 12
 @export var keyframes: Array[ShapeKeyframe] = []
 
@@ -122,6 +127,35 @@ func insert_point_on_edge(edge_index: int, t: float, topology_source: int = 0) -
 	return edge_index + 1
 
 
+func remove_point_at(point_index: int) -> bool:
+	## Remove the same control point index on every keyframe.
+	if keyframes.is_empty():
+		return false
+	var ref: ShapeKeyframe = null
+	for key in keyframes:
+		if key != null:
+			ref = key
+			break
+	if ref == null:
+		return false
+	var min_points := 3 if closed else 2
+	if ref.points.size() <= min_points:
+		return false
+	if point_index < 0 or point_index >= ref.points.size():
+		return false
+
+	for key in keyframes:
+		if key == null:
+			continue
+		if point_index >= key.points.size():
+			continue
+		key.points.remove_at(point_index)
+		key.emit_changed()
+
+	emit_changed()
+	return true
+
+
 func _split_keyframe_edge(key: ShapeKeyframe, edge_index: int, t: float) -> void:
 	var count := key.points.size()
 	var a: BezierPoint = key.points[edge_index]
@@ -191,6 +225,9 @@ func sample_control_points(t: float) -> Array[BezierPoint]:
 		return out
 
 	t = clampf(t, 0.0, 1.0)
+	if ease_mode == MorphEasing.Mode.GLOBAL_TIMELINE:
+		t = MorphEasing.apply(ease, t)
+
 	if entries.size() == 1 or t <= float(entries[0].time):
 		return (entries[0].key as ShapeKeyframe).duplicate_control_points()
 	if t >= float(entries[entries.size() - 1].time):
@@ -204,8 +241,102 @@ func sample_control_points(t: float) -> Array[BezierPoint]:
 	var b: ShapeKeyframe = entries[i + 1].key
 	var span: float = float(entries[i + 1].time) - float(entries[i].time)
 	var alpha: float = 0.0 if span <= 0.0 else (t - float(entries[i].time)) / span
-	alpha = MorphEasing.apply(ease, alpha)
-	return _lerp_control_points(a, b, alpha)
+	if ease_mode == MorphEasing.Mode.BETWEEN_KEYS:
+		alpha = MorphEasing.apply(ease, alpha)
+
+	var linear := _lerp_control_points(a, b, alpha)
+	if smooth_blend <= 0.001 or entries.size() < 3:
+		return linear
+
+	var k0: ShapeKeyframe = _entry_key(entries, i - 1)
+	var k1: ShapeKeyframe = a
+	var k2: ShapeKeyframe = b
+	var k3: ShapeKeyframe = _entry_key(entries, i + 2)
+	var spline := _cardinal_control_points(k0, k1, k2, k3, alpha, smooth_tension)
+	## weight can exceed 1 to exaggerate beyond pure spline.
+	return _blend_control_points(linear, spline, smooth_blend)
+
+
+func _entry_key(entries: Array[Dictionary], index: int) -> ShapeKeyframe:
+	var n := entries.size()
+	if n == 0:
+		return null
+	if loop:
+		index = wrapi(index, 0, n)
+	else:
+		index = clampi(index, 0, n - 1)
+	return entries[index].key as ShapeKeyframe
+
+
+func _cardinal_control_points(
+	k0: ShapeKeyframe,
+	k1: ShapeKeyframe,
+	k2: ShapeKeyframe,
+	k3: ShapeKeyframe,
+	t: float,
+	tension: float
+) -> Array[BezierPoint]:
+	var count := mini(
+		mini(k0.points.size() if k0 else 0, k1.points.size() if k1 else 0),
+		mini(k2.points.size() if k2 else 0, k3.points.size() if k3 else 0)
+	)
+	var out: Array[BezierPoint] = []
+	out.resize(count)
+	for i in count:
+		var p0: BezierPoint = k0.points[i] if k0 else null
+		var p1: BezierPoint = k1.points[i] if k1 else null
+		var p2: BezierPoint = k2.points[i] if k2 else null
+		var p3: BezierPoint = k3.points[i] if k3 else null
+		if p0 == null or p1 == null or p2 == null or p3 == null:
+			out[i] = BezierPoint.new()
+			continue
+		var mixed := BezierPoint.new()
+		mixed.position = _cardinal(p0.position, p1.position, p2.position, p3.position, t, tension)
+		mixed.handle_in = _cardinal(p0.handle_in, p1.handle_in, p2.handle_in, p3.handle_in, t, tension)
+		mixed.handle_out = _cardinal(p0.handle_out, p1.handle_out, p2.handle_out, p3.handle_out, t, tension)
+		out[i] = mixed
+	return out
+
+
+func _blend_control_points(
+	a: Array[BezierPoint],
+	b: Array[BezierPoint],
+	weight: float
+) -> Array[BezierPoint]:
+	## linear + (spline - linear) * weight — weight>1 adds extra punch.
+	var count := mini(a.size(), b.size())
+	var out: Array[BezierPoint] = []
+	out.resize(count)
+	weight = maxf(weight, 0.0)
+	for i in count:
+		var pa: BezierPoint = a[i]
+		var pb: BezierPoint = b[i]
+		if pa == null or pb == null:
+			out[i] = BezierPoint.new()
+		else:
+			out[i] = pa.lerp_toward(pb, weight)
+	return out
+
+
+static func _cardinal(
+	p0: Vector2,
+	p1: Vector2,
+	p2: Vector2,
+	p3: Vector2,
+	t: float,
+	tension: float
+) -> Vector2:
+	## Cardinal spline (tension 0 = Catmull-Rom). Negative tension = longer tangents.
+	var s := (1.0 - tension) * 0.5
+	var m1 := s * (p2 - p0)
+	var m2 := s * (p3 - p1)
+	var t2 := t * t
+	var t3 := t2 * t
+	var h00 := 2.0 * t3 - 3.0 * t2 + 1.0
+	var h10 := t3 - 2.0 * t2 + t
+	var h01 := -2.0 * t3 + 3.0 * t2
+	var h11 := t3 - t2
+	return h00 * p1 + h10 * m1 + h01 * p2 + h11 * m2
 
 
 func sample_polygon(t: float) -> PackedVector2Array:

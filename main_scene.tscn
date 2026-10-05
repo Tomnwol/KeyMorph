@@ -4,79 +4,156 @@
 [ext_resource type="Script" uid="uid://ce6p3mkwn4rec" path="res://addons/morph_vfx/resources/shape_keyframe.gd" id="2_key"]
 [ext_resource type="Script" uid="uid://bp1y1jly07cvf" path="res://addons/morph_vfx/resources/bezier_point.gd" id="3_point"]
 [ext_resource type="Script" uid="uid://3b3hjrtb6gk6" path="res://addons/morph_vfx/resources/morph_shape_2d.gd" id="4_shape"]
-[ext_resource type="Material" path="res://addons/morph_vfx/shaders/km_polar_energy_mat.tres" id="5_mat"]
-
-[sub_resource type="Resource" id="p0a"]
-script = ExtResource("3_point")
-position = Vector2(0, -120)
-
-[sub_resource type="Resource" id="p1a"]
-script = ExtResource("3_point")
-position = Vector2(-120, 100)
-
-[sub_resource type="Resource" id="p2a"]
-script = ExtResource("3_point")
-position = Vector2(100, 60)
-
-[sub_resource type="Resource" id="key_a"]
-script = ExtResource("2_key")
-points = Array[ExtResource("3_point")]([SubResource("p0a"), SubResource("p1a"), SubResource("p2a")])
-
-[sub_resource type="Resource" id="p0b"]
-script = ExtResource("3_point")
-position = Vector2(0, -40)
-
-[sub_resource type="Resource" id="p1b"]
-script = ExtResource("3_point")
-position = Vector2(-160, 140)
-
-[sub_resource type="Resource" id="p2b"]
-script = ExtResource("3_point")
-position = Vector2(160, 140)
-
-[sub_resource type="Resource" id="key_b"]
-script = ExtResource("2_key")
-time = 1.0
-points = Array[ExtResource("3_point")]([SubResource("p0b"), SubResource("p1b"), SubResource("p2b")])
+[ext_resource type="Material" path="res://addons/morph_vfx/shaders/km_rock_lava_mat.tres" id="5_mat"]
 
 [sub_resource type="Resource" id="Resource_d5x1h"]
 script = ExtResource("3_point")
-position = Vector2(35, -165)
+position = Vector2(83.02456, 126.81594)
+handle_in = Vector2(117.76594, 20.328636)
+handle_out = Vector2(55.728523, 17.174202)
+
+[sub_resource type="Resource" id="Resource_qwutr"]
+script = ExtResource("3_point")
+position = Vector2(82.674065, 146.44359)
+handle_in = Vector2(26.287033, -5.2574005)
+handle_out = Vector2(25.936539, 6.6593933)
 
 [sub_resource type="Resource" id="Resource_8mm7a"]
 script = ExtResource("3_point")
-position = Vector2(-189, 39)
+position = Vector2(271.23975, 132.42384)
+handle_in = Vector2(-33.296906, 24.534561)
+handle_out = Vector2(33.997894, -33.6474)
 
 [sub_resource type="Resource" id="Resource_hq1ik"]
 script = ExtResource("3_point")
-position = Vector2(137, 140)
+position = Vector2(268, 106)
+handle_in = Vector2(14.455536, 2.5902634)
 
 [sub_resource type="Resource" id="Resource_nfk4m"]
 script = ExtResource("2_key")
-time = 0.18835098335854766
-points = Array[ExtResource("3_point")]([SubResource("Resource_d5x1h"), SubResource("Resource_8mm7a"), SubResource("Resource_hq1ik")])
+points = Array[ExtResource("3_point")]([SubResource("Resource_d5x1h"), SubResource("Resource_qwutr"), SubResource("Resource_8mm7a"), SubResource("Resource_hq1ik")])
 
-[sub_resource type="Resource" id="Resource_66tet"]
+[sub_resource type="Resource" id="Resource_6jybn"]
 script = ExtResource("3_point")
-position = Vector2(-219, -138)
+position = Vector2(124.210785, 138.47829)
+handle_in = Vector2(157.48822, -38.9487)
+handle_out = Vector2(23.903694, 15.807266)
 
-[sub_resource type="Resource" id="Resource_7ycvg"]
+[sub_resource type="Resource" id="Resource_84odl"]
 script = ExtResource("3_point")
-position = Vector2(-59, 187)
+position = Vector2(167.67105, 157.69267)
+handle_in = Vector2(-20.433777, -7.3253174)
+handle_out = Vector2(39.517395, -16.392029)
 
-[sub_resource type="Resource" id="Resource_wr18j"]
+[sub_resource type="Resource" id="Resource_ak604"]
 script = ExtResource("3_point")
-position = Vector2(146.47437, 140)
+position = Vector2(270.974, 13.7295685)
+handle_in = Vector2(-6.2092285, 59.83423)
+handle_out = Vector2(-46.85135, -82.97766)
 
-[sub_resource type="Resource" id="Resource_qwutr"]
+[sub_resource type="Resource" id="Resource_vimvf"]
+script = ExtResource("3_point")
+position = Vector2(179.52924, -140.3718)
+handle_in = Vector2(90.315796, 53.625008)
+
+[sub_resource type="Resource" id="Resource_ghshe"]
 script = ExtResource("2_key")
-time = 0.5226928895612708
-points = Array[ExtResource("3_point")]([SubResource("Resource_66tet"), SubResource("Resource_7ycvg"), SubResource("Resource_wr18j")])
+time = 0.15960665658093798
+points = Array[ExtResource("3_point")]([SubResource("Resource_6jybn"), SubResource("Resource_84odl"), SubResource("Resource_ak604"), SubResource("Resource_vimvf")])
+
+[sub_resource type="Resource" id="Resource_ijoax"]
+script = ExtResource("3_point")
+position = Vector2(179.27405, 110.68587)
+handle_in = Vector2(191.58524, 3.7565613)
+handle_out = Vector2(63.861725, 17.280212)
+
+[sub_resource type="Resource" id="Resource_j8kkg"]
+script = ExtResource("3_point")
+position = Vector2(252.15158, 103.92403)
+handle_in = Vector2(-12.021057, 3.7565613)
+handle_out = Vector2(38.317078, -39.819702)
+
+[sub_resource type="Resource" id="Resource_yh4yk"]
+script = ExtResource("3_point")
+position = Vector2(237.87662, -36.57184)
+handle_in = Vector2(24.042053, 52.592026)
+handle_out = Vector2(-46.85135, -82.97766)
+
+[sub_resource type="Resource" id="Resource_p8s74"]
+script = ExtResource("3_point")
+position = Vector2(118.41754, -151.523)
+handle_in = Vector2(90.315796, 53.625008)
+
+[sub_resource type="Resource" id="Resource_o4fqm"]
+script = ExtResource("2_key")
+time = 0.4508320726172466
+points = Array[ExtResource("3_point")]([SubResource("Resource_ijoax"), SubResource("Resource_j8kkg"), SubResource("Resource_yh4yk"), SubResource("Resource_p8s74")])
+
+[sub_resource type="Resource" id="Resource_gfmxp"]
+script = ExtResource("3_point")
+position = Vector2(234.12003, -5.767929)
+handle_in = Vector2(-11.269714, -63.861755)
+handle_out = Vector2(12.021057, 1.5026245)
+
+[sub_resource type="Resource" id="Resource_1n88h"]
+script = ExtResource("3_point")
+position = Vector2(261.91867, -8.021881)
+handle_in = Vector2(-18.782898, 19.53418)
+handle_out = Vector2(-23.290771, -36.814423)
+
+[sub_resource type="Resource" id="Resource_opjno"]
+script = ExtResource("3_point")
+position = Vector2(210.82925, -92.92044)
+handle_in = Vector2(16.52893, 22.539444)
+handle_out = Vector2(-78.13672, -45.8302)
+
+[sub_resource type="Resource" id="Resource_meb7l"]
+script = ExtResource("3_point")
+position = Vector2(95.87811, -146.2638)
+handle_in = Vector2(72.12622, 34.56048)
+
+[sub_resource type="Resource" id="Resource_w30ff"]
+script = ExtResource("2_key")
+time = 0.6127080181543116
+points = Array[ExtResource("3_point")]([SubResource("Resource_gfmxp"), SubResource("Resource_1n88h"), SubResource("Resource_opjno"), SubResource("Resource_meb7l")])
+
+[sub_resource type="Resource" id="Resource_xy6fp"]
+script = ExtResource("3_point")
+position = Vector2(149.22147, -99.68228)
+handle_in = Vector2(-32.849976, -24.804825)
+handle_out = Vector2(12.021057, 1.5026245)
+
+[sub_resource type="Resource" id="Resource_uws2o"]
+script = ExtResource("3_point")
+position = Vector2(169.55414, -108.57733)
+handle_in = Vector2(-9.330139, 7.633751)
+handle_out = Vector2(-4.240967, -4.665077)
+
+[sub_resource type="Resource" id="Resource_iylel"]
+script = ExtResource("3_point")
+position = Vector2(158.23724, -119.21646)
+handle_in = Vector2(16.52893, 22.539444)
+handle_out = Vector2(-29.820587, -24.136871)
+
+[sub_resource type="Resource" id="Resource_yj5sn"]
+script = ExtResource("3_point")
+position = Vector2(95.87811, -146.2638)
+handle_in = Vector2(27.025276, 8.423737)
+
+[sub_resource type="Resource" id="Resource_jtbqm"]
+script = ExtResource("2_key")
+time = 0.989409984871407
+points = Array[ExtResource("3_point")]([SubResource("Resource_xy6fp"), SubResource("Resource_uws2o"), SubResource("Resource_iylel"), SubResource("Resource_yj5sn")])
 
 [sub_resource type="Resource" id="shape"]
 script = ExtResource("4_shape")
-duration = 1.5
-keyframes = Array[ExtResource("2_key")]([SubResource("key_a"), SubResource("key_b"), SubResource("Resource_nfk4m"), SubResource("Resource_qwutr")])
+duration = 0.6000000000000001
+ease = 4
+ease_mode = 1
+smooth_blend = 0.3
+smooth_tension = -0.6599999999999999
+curve_precision = 16
+keyframes = Array[ExtResource("2_key")]([SubResource("Resource_nfk4m"), SubResource("Resource_ghshe"), SubResource("Resource_o4fqm"), SubResource("Resource_w30ff"), SubResource("Resource_jtbqm")])
 
 [node name="MainScene" type="Node2D" unique_id=626426631]
 
@@ -89,6 +166,10 @@ position = Vector2(640, 360)
 script = ExtResource("1_morph")
 shape = SubResource("shape")
 color = Color(1, 1, 1, 1)
-uv_mode = 1
-curve_precision = 12
-playing = true
+ease = 4
+ease_mode = 1
+smooth_blend = 0.3
+smooth_tension = -0.6599999999999999
+duration = 0.6000000000000001
+draw_outline = false
+curve_precision = 16

@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://addons/morph_vfx/shaders/km_rock_lava.gdshader" id="1_shader"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/rock_dark = Color(0.18, 0.16, 0.15, 1)
+shader_parameter/rock_light = Color(0.42, 0.38, 0.34, 1)
+shader_parameter/lava_cool = Color(0.55, 0.08, 0.02, 1)
+shader_parameter/lava_hot = Color(1, 0.72, 0.15, 1)
+shader_parameter/scale = 7.0
+shader_parameter/crack_width = 0.07
+shader_parameter/lava_speed = 1.4
+shader_parameter/glow = 1.35

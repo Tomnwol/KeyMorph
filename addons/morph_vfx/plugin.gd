@@ -60,10 +60,22 @@ func _forward_canvas_draw_over_viewport(overlay: Control) -> void:
 
 
 func _forward_canvas_gui_input(event: InputEvent) -> bool:
-	var handled := _gizmo.handle_input(event)
+	var handled: bool = _gizmo.handle_input(event)
 	if handled:
 		update_overlays()
 	return handled
+
+
+func _input(event: InputEvent) -> void:
+	## Keyboard delete may not reach the canvas forwarder; catch it here.
+	if _edited_morph == null:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key_ev := event as InputEventKey
+		if key_ev.keycode == KEY_DELETE or key_ev.keycode == KEY_BACKSPACE:
+			if _gizmo.try_delete_selected_point():
+				update_overlays()
+				get_viewport().set_input_as_handled()
 
 
 func _on_selection_changed() -> void:
