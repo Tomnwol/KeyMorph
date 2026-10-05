@@ -58,13 +58,13 @@ handle_in = Vector2(90.315796, 53.625008)
 
 [sub_resource type="Resource" id="Resource_ghshe"]
 script = ExtResource("2_key")
-time = 0.15960665658093798
+time = 0.27382753403933435
 points = Array[ExtResource("3_point")]([SubResource("Resource_6jybn"), SubResource("Resource_84odl"), SubResource("Resource_ak604"), SubResource("Resource_vimvf")])
 
 [sub_resource type="Resource" id="Resource_ijoax"]
 script = ExtResource("3_point")
 position = Vector2(179.27405, 110.68587)
-handle_in = Vector2(191.58524, 3.7565613)
+handle_in = Vector2(96.18872, -19.735428)
 handle_out = Vector2(63.861725, 17.280212)
 
 [sub_resource type="Resource" id="Resource_j8kkg"]
@@ -148,10 +148,10 @@ points = Array[ExtResource("3_point")]([SubResource("Resource_xy6fp"), SubResour
 [sub_resource type="Resource" id="shape"]
 script = ExtResource("4_shape")
 duration = 0.6000000000000001
-ease = 4
+ease = 3
 ease_mode = 1
-smooth_blend = 0.3
-smooth_tension = -0.6599999999999999
+smooth_blend = 0.74
+smooth_tension = -0.36
 curve_precision = 16
 keyframes = Array[ExtResource("2_key")]([SubResource("Resource_nfk4m"), SubResource("Resource_ghshe"), SubResource("Resource_o4fqm"), SubResource("Resource_w30ff"), SubResource("Resource_jtbqm")])
 
@@ -166,10 +166,11 @@ position = Vector2(640, 360)
 script = ExtResource("1_morph")
 shape = SubResource("shape")
 color = Color(1, 1, 1, 1)
-ease = 4
+ease = 3
 ease_mode = 1
-smooth_blend = 0.3
-smooth_tension = -0.6599999999999999
+smooth_blend = 0.74
+smooth_tension = -0.36
 duration = 0.6000000000000001
 draw_outline = false
 curve_precision = 16
+time = 0.15247666666666437
